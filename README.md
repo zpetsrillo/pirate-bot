@@ -6,47 +6,48 @@ Keep track of movies to be watched on the server. Bot will record all movies sug
 
 ### commands
  - subscribe: join the movie role in server
- - all: list all movies
+ - all: list all queued movies
  - watched: list all watched movies
- - queued: list of queued movies
+ - complete: list all movies
  - rate X: rate current movie
- - suggest X: suggest movie
- - schedule mm-dd-yyyy hh:mm : schedule next viewing
+ - add X: add movie
+ - vote X: vote to watch movie
+ - schedule mm-dd hh:mm : schedule next viewing
  - my watched: list of all movies you have watched
  - my suggested: list of all movies you have suggested
 
 
 #### Movie
 
-| movie_id | movie_name       | watched | schedule_id |
-| -------- | ---------------- | ------- | ----------- |
-| 420      | Fateful Findings | 1       | 78          |
+| movie_id | title      | year | rated | released    | runtime | genre                           | director  | plot                                                               | poster                                                                                                                             | imdb_rating | imdb_id   |
+| -------- | ---------- | ---- | ----- | ----------- | ------- | ------------------------------- | --------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------- |
+| 1        | Hereditary | 2018 | R     | 08 Jun 2018 | 127 min | Drama, Horro, Mystery, Thriller | Ari Aster | A grieving family is haunted by tragic and disturbing occurrences. | https://m.media-amazon.com/images/M/MV5BOTU5MDg3OGItZWQ1Ny00ZGVmLTg2YTUtMzBkYzQ1YWIwZjlhXkEyXkFqcGdeQXVyNTAzMTY4MDA@._V1_SX300.jpg | 73          | tt7784604 |
 
 #### User
 
-| user_id | user_name |
-| ------- | --------- |
-| 69      | qwak      |
+| user_id | user_name | discriminator |
+| ------- | --------- | ------------- |
+| 7       | qwak      | 6969          |
 
 #### Votes
 
 | vote_id | movie_id | user_id |
 | ------- | -------- | ------- |
-| 10      | 420      | 69      |
+| 10      | 1        | 7       |
 
 #### Watched
 
 | watch_id | movie_id | user_id |
 | -------- | -------- | ------- |
-| 27       | 420      | 69      |
+| 27       | 1        | 7       |
 
 #### Ratings
 
 | rating_id | movie_id | user_id | rating |
 | --------- | -------- | ------- | ------ |
-| 213       | 420      | 69      | 5      |
+| 213       | 1        | 7       | 5      |
 
 #### Schedule
 | schedule_id | watch_date       | movie_id |
 | ----------- | ---------------- | -------- |
-| 78          | 11-20-2020 10:30 | 420      |
+| 78          | 11-20-2020 10:30 | 1        |
