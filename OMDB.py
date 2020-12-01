@@ -13,7 +13,7 @@ class OMDB:
         self.url = "http://www.omdbapi.com/"
 
     def getMovie(self, movie):
-        parameters = {"apikey": self.key, "type": "movie"}
+        parameters = {"apikey": self.key, "type": "movie", "plot": "full"}
 
         if movie[:2] == "tt":
             parameters["i"] = movie

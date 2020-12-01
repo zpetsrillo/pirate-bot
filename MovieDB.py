@@ -40,7 +40,7 @@ class MovieDB:
     def create_all_db(self):
         print("Creating all tables...")
         self.create_db(MOVIES_TABLE, MOVIES_COLUMNS, MOVIES_TYPES)
-        self.create_db(USERS_TABLE, USERS_COLUMNS, USERS_TYPES)
+        self.create_db(USERS_TABLE, USERS_COLUMNS, USERS_TYPES, USERS_EXTRAS)
         self.create_db(VOTES_TABLE, VOTES_COLUMNS, VOTES_TYPES, VOTES_EXTRAS)
         self.create_db(WATCHED_TABLE, WATCHED_COLUMNS, WATCHED_TYPES, WATCHED_EXTRAS)
         # self.create_db(RATINGS_TABLE, RATINGS_COLUMNS)
@@ -50,14 +50,10 @@ class MovieDB:
     def insert(self, table_name, table_columns, *args):
         values = tuple([x for x in args])
         self.c.execute(
-            f"""INSERT INTO {table_name} ({', '.join(table_columns[1:])}) VALUES ({('?,'*len(values))[:-1]})""",
+            f"""INSERT OR IGNORE INTO {table_name} ({', '.join(table_columns[1:])}) VALUES ({('?,'*len(values))[:-1]}, datetime('now'))""",
             values,
         )
         self.conn.commit()
-
-    def fetchall(self, table_name):
-        self.c.execute(f"""SELECT * FROM {table_name}""")
-        return self.c.fetchall()
 
     def close(self):
         self.conn.commit()
@@ -111,9 +107,63 @@ class MovieDB:
         print(f"Added {title} - {imdbId} to {MOVIES_TABLE}")
         return self.c.lastrowid
 
+    def getMovie(self, movie_id):
+        try:
+            int(movie_id)
+            return self._getMovieById(movie_id)
+        except:
+            if movie_id[:2] == "tt":
+                return self._getMovieByIMDB(movie_id)
+            else:
+                return self._getMovieByTitle(movie_id)
+
+    def _getMovieById(self, movie_id):
+        self.c.execute(
+            f"""
+            SELECT {", ".join(MOVIES_COLUMNS[:2])}
+            FROM {MOVIES_TABLE}
+            WHERE movie_id = '{movie_id}'
+            """
+        )
+        return self.c.fetchone()
+
+    def _getMovieByTitle(self, title):
+        self.c.execute(
+            f"""
+            SELECT {", ".join(MOVIES_COLUMNS[:2])}
+            FROM {MOVIES_TABLE}
+            WHERE title LIKE '%{title}%'
+            """
+        )
+        return self.c.fetchone()
+
+    def _getMovieByIMDB(self, imdb_id):
+        self.c.execute(
+            f"""
+            SELECT {", ".join(MOVIES_COLUMNS[:2])}
+            FROM {MOVIES_TABLE}
+            WHERE imdb_id = '{imdb_id}'
+            """
+        )
+        return self.c.fetchone()
+
+    def getMovieFull(self, movie_id):
+        self.c.execute(
+            f"""
+            SELECT *
+            FROM {MOVIES_TABLE}
+            WHERE movie_id = '{movie_id}'
+            """
+        )
+        return self.c.fetchone()
+
     def voteMovie(self, movie_id, user_id):
         self.insert(VOTES_TABLE, VOTES_COLUMNS, movie_id, user_id)
         print(f"USER_ID:{user_id} voted for MOVIE_ID:{movie_id}")
+
+    def watchedMovie(self, movie_id, user_id):
+        self.insert(WATCHED_TABLE, WATCHED_COLUMNS, movie_id, user_id)
+        print(f"USER_ID:{user_id} watched MOVIE_ID:{movie_id}")
 
     def all_unwatched(self):
         self.c.execute(

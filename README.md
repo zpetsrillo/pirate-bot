@@ -5,8 +5,10 @@
 Keep track of movies to be watched on the server. Bot will record all movies suggestions and then document wether they have been watched and assign a rating from the average of user feedback. Movie selection will be based on how many times a movie has been suggested with tie breakers decided by random. Alerts will be sent out to all users with movie watcher role at time of movie screening.
 
 ### commands
+ - options: list available commands with explanation
  - subscribe: join the movie role in server
  - all: list all queued movies
+ - top X: list top X queued movies
  - watched: list all watched movies
  - complete: list all movies
  - rate X: rate current movie
@@ -19,9 +21,9 @@ Keep track of movies to be watched on the server. Bot will record all movies sug
 
 #### Movie
 
-| movie_id | title      | year | rated | released    | runtime | genre                           | director  | plot                                                               | poster                                                                                                                             | imdb_rating | imdb_id   |
-| -------- | ---------- | ---- | ----- | ----------- | ------- | ------------------------------- | --------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------- |
-| 1        | Hereditary | 2018 | R     | 08 Jun 2018 | 127 min | Drama, Horro, Mystery, Thriller | Ari Aster | A grieving family is haunted by tragic and disturbing occurrences. | https://m.media-amazon.com/images/M/MV5BOTU5MDg3OGItZWQ1Ny00ZGVmLTg2YTUtMzBkYzQ1YWIwZjlhXkEyXkFqcGdeQXVyNTAzMTY4MDA@._V1_SX300.jpg | 73          | tt7784604 |
+| movie_id | title      | year | rated | released    | runtime | genre                            | director  | plot                                                               | poster                                                                                                                             | imdb_rating | imdb_id   |
+| -------- | ---------- | ---- | ----- | ----------- | ------- | -------------------------------- | --------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------- |
+| 1        | Hereditary | 2018 | R     | 08 Jun 2018 | 127 min | Drama, Horror, Mystery, Thriller | Ari Aster | A grieving family is haunted by tragic and disturbing occurrences. | https://m.media-amazon.com/images/M/MV5BOTU5MDg3OGItZWQ1Ny00ZGVmLTg2YTUtMzBkYzQ1YWIwZjlhXkEyXkFqcGdeQXVyNTAzMTY4MDA@._V1_SX300.jpg | 73          | tt7784604 |
 
 #### User
 
