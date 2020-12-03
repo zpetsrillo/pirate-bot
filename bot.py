@@ -35,6 +35,8 @@ subscribe       - join the Movies role on the server to be mentioned in announce
 add [movie]     - add movie to queue in order to be voted on and announced (movie title or IMDB Id)
 all             - list all unwatched movies
 top [number]    - list top unwatched movies of requested number
+myAdded         - list all movies you have added
+myWatched       - list all movies you have watched
 vote [movie]    - vote to watch movie
 watched [movie] - mark movie as having been watched
 announce [movie]- announce movie to be watched that night
@@ -85,22 +87,28 @@ async def top(ctx, arg: int = 5):
 
 @bot.command()
 async def watched(ctx, *, arg):
-    user_id = _getUser(ctx)
+    user_id = await _getUser(ctx)
     movie_id, movie_title = await _getMovie(ctx, arg)
     db.watchedMovie(movie_id, user_id)
     await ctx.send(f"{ctx.author.display_name} watched {movie_title}.")
 
 
-# @bot.command()
-# async def myWatched(ctx):
-#     print(f"{ctx.author} listing personal watched")
-#     await ctx.send("")
+@bot.command()
+async def myWatched(ctx):
+    print(f"{ctx.author} listing personal watched")
+    user_id = await _getUser(ctx)
+    movies = db.user_watched(user_id)
+    table = tabulate(movies, headers=["Id", "Title", "Watch Date"])
+    await ctx.send(f"""```{table}```""")
 
 
-# @bot.command()
-# async def mySuggested(ctx):
-#     print(f"{ctx.author} listing personal suggested")
-#     await ctx.send("")
+@bot.command()
+async def myAdded(ctx):
+    print(f"{ctx.author} listing personal added")
+    user_id = await _getUser(ctx)
+    movies = db.user_unwatched(user_id)
+    table = tabulate(movies, headers=["Id", "Title", "Add Date"])
+    await ctx.send(f"""```{table}```""")
 
 
 # @bot.command()

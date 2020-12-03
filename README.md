@@ -16,7 +16,7 @@ Keep track of movies to be watched on the server. Bot will record all movies sug
  - vote X: vote to watch movie
  - schedule mm-dd hh:mm : schedule next viewing
  - my watched: list of all movies you have watched
- - my suggested: list of all movies you have suggested
+ - my added: list of all movies you have added
 
 
 #### Movie

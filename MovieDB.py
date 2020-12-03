@@ -202,3 +202,59 @@ class MovieDB:
             """
         )
         return self.c.fetchall()
+
+    def user_watched(self, user_id):
+        self.c.execute(
+            f"""
+            SELECT
+                M.movie_id,
+                M.title,
+                W.timestamp
+            FROM
+                {MOVIES_TABLE} AS M
+                LEFT JOIN
+                (
+                    SELECT
+                        movie_id,
+                        timestamp
+                    FROM
+                        {WATCHED_TABLE}
+                    WHERE
+                        user_id = '{user_id}'
+                ) AS W on M.movie_id = W.movie_id
+            WHERE
+                M.user_id = '{user_id}'
+            ORDER BY
+                timestamp DESC
+            ;
+            """
+        )
+        return self.c.fetchall()
+
+    def user_unwatched(self, user_id):
+        self.c.execute(
+            f"""
+            SELECT
+                M.movie_id,
+                M.title,
+                M.timestamp
+            FROM
+                {MOVIES_TABLE} AS M
+                LEFT JOIN 
+                (
+                    SELECT
+                        movie_id,
+                        user_id
+                    FROM
+                        {VOTES_TABLE}
+                    WHERE
+                        user_id = '{user_id}'
+                ) AS V ON M.movie_id = V.movie_id
+            WHERE
+                V.user_id = '{user_id}'
+            ORDER BY
+                timestamp DESC
+            ;
+            """
+        )
+        return self.c.fetchall()
