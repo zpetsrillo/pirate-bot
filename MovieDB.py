@@ -223,7 +223,7 @@ class MovieDB:
                         user_id = '{user_id}'
                 ) AS W on M.movie_id = W.movie_id
             WHERE
-                M.user_id = '{user_id}'
+                W.user_id = '{user_id}'
             ORDER BY
                 timestamp DESC
             ;

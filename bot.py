@@ -88,27 +88,30 @@ async def top(ctx, arg: int = 5):
 @bot.command()
 async def watched(ctx, *, arg):
     user_id = await _getUser(ctx)
-    movie_id, movie_title = await _getMovie(ctx, arg)
-    db.watchedMovie(movie_id, user_id)
-    await ctx.send(f"{ctx.author.display_name} watched {movie_title}.")
+    if user_id is not None:
+        movie_id, movie_title = await _getMovie(ctx, arg)
+        db.watchedMovie(movie_id, user_id)
+        await ctx.send(f"{ctx.author.display_name} watched {movie_title}.")
 
 
 @bot.command()
 async def myWatched(ctx):
     print(f"{ctx.author} listing personal watched")
     user_id = await _getUser(ctx)
-    movies = db.user_watched(user_id)
-    table = tabulate(movies, headers=["Id", "Title", "Watch Date"])
-    await ctx.send(f"""```{table}```""")
+    if user_id is not None:
+        movies = db.user_watched(user_id)
+        table = tabulate(movies, headers=["Id", "Title", "Watch Date"])
+        await ctx.send(f"""```{table}```""")
 
 
 @bot.command()
 async def myAdded(ctx):
     print(f"{ctx.author} listing personal added")
     user_id = await _getUser(ctx)
-    movies = db.user_unwatched(user_id)
-    table = tabulate(movies, headers=["Id", "Title", "Add Date"])
-    await ctx.send(f"""```{table}```""")
+    if user_id is not None:
+        movies = db.user_unwatched(user_id)
+        table = tabulate(movies, headers=["Id", "Title", "Add Date"])
+        await ctx.send(f"""```{table}```""")
 
 
 # @bot.command()
@@ -123,23 +126,25 @@ async def myAdded(ctx):
 @bot.command()
 async def add(ctx, *, arg):
     user_id = await _getUser(ctx)
-    print(f"{ctx.author} adding movie: {arg}")
-    movie = omdb.getMovie(arg)
-    try:
-        movie_id = db.addMovie(movie)
-        db.voteMovie(movie_id, user_id)
-        await ctx.send(f"Added movie {movie['Title']}")
-    except Exception as e:
-        print(e)
+    if user_id is not None:
+        print(f"{ctx.author} adding movie: {arg}")
+        movie = omdb.getMovie(arg)
+        try:
+            movie_id = db.addMovie(movie)
+            db.voteMovie(movie_id, user_id)
+            await ctx.send(f"Added movie {movie['Title']}")
+        except Exception as e:
+            print(e)
 
 
 @bot.command()
 async def vote(ctx, *, arg):
     user_id = await _getUser(ctx)
-    print(f"{ctx.author} voting movie: {arg}")
-    movie_id, movie_title = await _getMovie(ctx, arg)
-    db.voteMovie(movie_id, user_id)
-    await ctx.send(f"{ctx.author.display_name} voted for {movie_title}.")
+    if user_id is not None:
+        print(f"{ctx.author} voting movie: {arg}")
+        movie_id, movie_title = await _getMovie(ctx, arg)
+        db.voteMovie(movie_id, user_id)
+        await ctx.send(f"{ctx.author.display_name} voted for {movie_title}.")
 
 
 # @bot.command()

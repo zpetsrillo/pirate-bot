@@ -1,5 +1,11 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+MOVIE_DB = os.getenv("MOVIE_DB")
+
 # Database
-MOVIES_DB = "movies.db"
+MOVIES_DB = MOVIE_DB
 
 # Movies table
 MOVIES_TABLE = "movies"
