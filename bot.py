@@ -84,7 +84,7 @@ async def top(ctx, arg: int = 5):
 
 
 @bot.command()
-async def watched(ctx, arg):
+async def watched(ctx, *, arg):
     user_id = _getUser(ctx)
     movie_id, movie_title = await _getMovie(ctx, arg)
     db.watchedMovie(movie_id, user_id)
@@ -113,8 +113,8 @@ async def watched(ctx, arg):
 
 
 @bot.command()
-async def add(ctx, arg):
-    user_id = _getUser(ctx)
+async def add(ctx, *, arg):
+    user_id = await _getUser(ctx)
     print(f"{ctx.author} adding movie: {arg}")
     movie = omdb.getMovie(arg)
     try:
@@ -126,8 +126,8 @@ async def add(ctx, arg):
 
 
 @bot.command()
-async def vote(ctx, arg):
-    user_id = _getUser(ctx)
+async def vote(ctx, *, arg):
+    user_id = await _getUser(ctx)
     print(f"{ctx.author} voting movie: {arg}")
     movie_id, movie_title = await _getMovie(ctx, arg)
     db.voteMovie(movie_id, user_id)
@@ -145,19 +145,14 @@ async def vote(ctx, arg):
 
 
 @bot.command()
-async def announce(ctx, arg):
+async def announce(ctx, *, arg):
     movie_id, _ = await _getMovie(ctx, arg)
     print(f"{ctx.author} announcing movie: {movie_id}")
     movie_role = get(ctx.guild.roles, name="Movies")
 
-    announcement, poster_url = movie_announcement(movie_id, movie_role.mention)
+    announcement = movie_announcement(movie_id)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(poster_url) as resp:
-            if resp.status != 200:
-                return await ctx.send(announcement)
-            data = io.BytesIO(await resp.read())
-            await ctx.send(announcement, file=discord.File(data, "movie_poster.png"))
+    await ctx.send(movie_role.mention, embed=announcement)
 
 
 async def _getMovie(ctx, movie):
@@ -174,7 +169,7 @@ async def _getUser(ctx):
         await ctx.send(f"Sorry, you must be subscribed to use this command. 😿")
 
 
-def movie_announcement(movie_id, role):
+def movie_announcement(movie_id):
     movie = db.getMovieFull(movie_id)
 
     (
@@ -195,24 +190,18 @@ def movie_announcement(movie_id, role):
 
     q, mod = divmod(imdb_rating, 10)
 
-    announcement = f"""
-{role}
-Tonight we will be watching
+    e = discord.Embed(
+        title=title,
+        description=f"imdb _{q}.{mod}_, runtime _{runtime}_, rated _{rated}_, released _{released}_, director _{director}_",
+        colour=discord.Colour.green(),
+    )
 
-**{title}**
+    e.set_author(name=f"📽🍿🎬 Tonight We're Watching 🎬🍿📽")
+    e.set_image(url=poster)
+    e.add_field(name="Genre", value=genre)
+    e.set_footer(text=f"{plot}")
 
-runtime _{runtime}_, rated _{rated}_, released _{released}_, director _{director}_
-
-**{genre}**
-
-IMDB Rating: **{q}.{mod}**
-
-Plot (click to show)
-||{plot}||
-
-    """
-
-    return announcement, poster
+    return e
 
 
 # Run bot
