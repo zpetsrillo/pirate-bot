@@ -3,3 +3,5 @@ discord.py
 tabulate
 python-dateutil
 aiohttp
+apscheduler
+SQLAlchemy

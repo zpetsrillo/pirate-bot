@@ -5,19 +5,38 @@
 Keep track of movies to be watched on the server. Bot will record all movies suggestions and then document wether they have been watched and assign a rating from the average of user feedback. Movie selection will be based on how many times a movie has been suggested with tie breakers decided by random. Alerts will be sent out to all users with movie watcher role at time of movie screening.
 
 ### commands
- - options: list available commands with explanation
- - subscribe: join the movie role in server
- - all: list all queued movies
- - top X: list top X queued movies
- - watched: list all watched movies
- - complete: list all movies
- - rate X: rate current movie
- - add X: add movie
- - vote X: vote to watch movie
- - schedule mm-dd hh:mm : schedule next viewing
- - my watched: list of all movies you have watched
- - my added: list of all movies you have added
+ - options                     - list available commands with explanation
+ - subscribe                   - join the Movies group
+ - add [movie]                 - add movie to queue (movie title  - or IMDB Id)
+ - all                         - list all unwatched movies
+ - top [number]                - list top unwatched movies of  - requested number
+ - myAll                       - list all movies you have added
+ - vote [movie]                - vote to watch movie
+ - watched [movie]             - mark movie as having been watched
+ - schedule [mm-dd] [movie]    - schedule movie event
 
+### Setup
+
+Create .env file with the following in same folder as project (you need to complete all the files with your own API keys and file locations)
+```
+DISCORD_TOKEN=
+OMDB_KEY=
+MOVIE_DB=
+LOG_FILE_DISCORD=
+LOG_FILE_BOT=
+```
+Install all required packages
+```
+pip install -r requirements.txt
+```
+To run bot, execute bot python file
+```
+python bot.py
+```
+
+### Tables
+
+Not that all tables include a timestamp column as their last column (not displayed here)
 
 #### Movie
 
@@ -42,14 +61,3 @@ Keep track of movies to be watched on the server. Bot will record all movies sug
 | watch_id | movie_id | user_id |
 | -------- | -------- | ------- |
 | 27       | 1        | 7       |
-
-#### Ratings
-
-| rating_id | movie_id | user_id | rating |
-| --------- | -------- | ------- | ------ |
-| 213       | 1        | 7       | 5      |
-
-#### Schedule
-| schedule_id | watch_date       | movie_id |
-| ----------- | ---------------- | -------- |
-| 78          | 11-20-2020 10:30 | 1        |

@@ -72,20 +72,11 @@ WATCHED_TABLE = "watched"
 WATCHED_COLUMNS = ["watch_id", "movie_id", "user_id", "timestamp"]
 WATCHED_TYPES = [
     "INTEGER PRIMARY KEY",
-    "INTEGER NOT NULL",
+    "INTEGER NOT NULL UNIQUE",
     "INTEGER NOT NULL",
     "TEXT NOT NULL",
 ]
 WATCHED_EXTRAS = [
     f"FOREIGN KEY (movie_id) REFERENCES {MOVIES_TABLE} (movie_id)",
     f"FOREIGN KEY (user_id) REFERENCES {USERS_TABLE} (user_id)",
-    f"UNIQUE(movie_id, user_id)",
 ]
-
-# Ratings table
-RATINGS_TABLE = "ratings"
-RATINGS_COLUMNS = ["rating_id", "movie_id", "user_id", "rating", "timestamp"]
-
-# Schedule table
-SCHEDULE_TABLE = "schedule"
-SCHEDULE_COLUMNS = ["schedule_id", "watch_date", "movie_id", "timestamp"]

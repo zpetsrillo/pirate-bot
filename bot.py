@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 import discord_logger
+from bot_logger import BotLogger
 from dotenv import load_dotenv
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -11,6 +12,7 @@ import io
 import aiohttp
 from OMDB import OMDB
 from MovieDB import MovieDB
+from Scheduler import Scheduler
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -21,25 +23,31 @@ bot = commands.Bot(command_prefix="movie/")
 # Create OMDB API object
 omdb = OMDB()
 
+# Private logging functions
+botLogger = BotLogger(discord_logger.logger)
+
 # Create MovieDB object
-db = MovieDB()
+db = MovieDB(logger=botLogger)
+
+# Create Scheduler object
+scheduler = Scheduler()
+scheduler.start()
 
 
 @bot.command()
 async def options(ctx):
-    print(f"{ctx.author} asked for help")
+    botLogger.log(f"{ctx.author} asked for help")
     await ctx.send(
         f"""
 ```
-subscribe       - join the Movies role on the server to be mentioned in announcements
-add [movie]     - add movie to queue in order to be voted on and announced (movie title or IMDB Id)
-all             - list all unwatched movies
-top [number]    - list top unwatched movies of requested number
-myAdded         - list all movies you have added
-myWatched       - list all movies you have watched
-vote [movie]    - vote to watch movie
-watched [movie] - mark movie as having been watched
-announce [movie]- announce movie to be watched that night
+subscribe                   - join the Movies group
+add [movie]                 - add movie to queue (movie title or IMDB Id)
+all                         - list all unwatched movies
+top [number]                - list top unwatched movies of requested number
+myAll                       - list all movies you have added
+vote [movie]                - vote to watch movie
+watched [movie]             - mark movie as having been watched
+schedule [mm-dd] [movie]    - schedule movie event
 ```
     """
     )
@@ -47,7 +55,7 @@ announce [movie]- announce movie to be watched that night
 
 @bot.command()
 async def subscribe(ctx):
-    print(f"Adding user {ctx.author} to Movies...")
+    botLogger.log(f"Adding user {ctx.author} to Movies...")
     movie_role = get(ctx.guild.roles, name="Movies")
     await ctx.author.add_roles(movie_role)
     try:
@@ -62,14 +70,14 @@ async def subscribe(ctx):
             await ctx.send(
                 f"{ctx.author.display_name} has been added to the movie watchers group!"
             )
-            print("Added successfully")
+            botLogger.log("Added successfully")
         except Exception as e:
-            print(e)
+            botLogger.warn(repr(e))
 
 
 @bot.command()
 async def all(ctx):
-    print(f"{ctx.author} listing all")
+    botLogger.log(f"{ctx.author} listing all")
     movies = db.all_unwatched()
     table = tabulate(movies, headers=["Id", "Title", "Votes"])
     await ctx.send(f"""```{table}```""")
@@ -77,7 +85,7 @@ async def all(ctx):
 
 @bot.command()
 async def top(ctx, arg: int = 5):
-    print(f"{ctx.author} listing all")
+    botLogger.log(f"{ctx.author} listing all")
     movies = db.all_unwatched()
     arg = min(len(movies), arg)
     movies = movies[:arg]
@@ -91,81 +99,94 @@ async def watched(ctx, *, arg):
     if user_id is not None:
         movie_id, movie_title = await _getMovie(ctx, arg)
         db.watchedMovie(movie_id, user_id)
-        await ctx.send(f"{ctx.author.display_name} watched {movie_title}.")
+        await ctx.send(f"{movie_title} marked as watched.")
 
 
 @bot.command()
-async def myWatched(ctx):
-    print(f"{ctx.author} listing personal watched")
-    user_id = await _getUser(ctx)
-    if user_id is not None:
-        movies = db.user_watched(user_id)
-        table = tabulate(movies, headers=["Id", "Title", "Watch Date"])
-        await ctx.send(f"""```{table}```""")
-
-
-@bot.command()
-async def myAdded(ctx):
-    print(f"{ctx.author} listing personal added")
+async def myAll(ctx):
+    botLogger.log(f"{ctx.author} listing personal all")
     user_id = await _getUser(ctx)
     if user_id is not None:
         movies = db.user_unwatched(user_id)
-        table = tabulate(movies, headers=["Id", "Title", "Add Date"])
+        table = tabulate(movies, headers=["Id", "Title"])
         await ctx.send(f"""```{table}```""")
-
-
-# @bot.command()
-# async def rate(ctx, arg: int):
-#     if 0 < arg < 10:
-#         print(f"{ctx.author} rating movie: {arg}")
-#         await ctx.send("")
-#     else:
-#         await ctx.send("Sorry, rating must be between 0 - 10. 😢")
 
 
 @bot.command()
 async def add(ctx, *, arg):
     user_id = await _getUser(ctx)
     if user_id is not None:
-        print(f"{ctx.author} adding movie: {arg}")
+        botLogger.log(f"{ctx.author} adding movie: {arg}")
         movie = omdb.getMovie(arg)
         try:
             movie_id = db.addMovie(movie)
             db.voteMovie(movie_id, user_id)
-            await ctx.send(f"Added movie {movie['Title']}")
+            await ctx.send(
+                f"Added movie {movie['Title']}, released: {movie['Year']} (id: {movie_id})"
+            )
         except Exception as e:
-            print(e)
+            botLogger.warn(repr(e))
 
 
 @bot.command()
 async def vote(ctx, *, arg):
     user_id = await _getUser(ctx)
     if user_id is not None:
-        print(f"{ctx.author} voting movie: {arg}")
+        botLogger.log(f"{ctx.author} voting movie: {arg}")
         movie_id, movie_title = await _getMovie(ctx, arg)
         db.voteMovie(movie_id, user_id)
         await ctx.send(f"{ctx.author.display_name} voted for {movie_title}.")
 
 
-# @bot.command()
-# async def schedule(ctx, arg0, arg1):
-#     now = datetime.now()
-#     date = datetime.strptime(f"{now.year}-{arg0} {arg1}", "%Y-%m-%d %H:%M")
-#     if date.month < now.month:
-#         date = date + relativedelta(years=1)
-#     print(f"{ctx.author} scheduled event for {date}")
-#     await ctx.send(f"{ctx.author.display_name} scheduled event for {date}.")
-
-
 @bot.command()
-async def announce(ctx, *, arg):
-    movie_id, _ = await _getMovie(ctx, arg)
-    print(f"{ctx.author} announcing movie: {movie_id}")
+async def schedule(ctx, *args):
+    user_id = await _getUser(ctx)
+    if len(args) < 3:
+        await ctx.send(f"Missing arguments. Try Again.")
+    else:
+        if user_id is not None:
+            now = datetime.now()
+            date = datetime.strptime(
+                f"{now.year}-{args[0]} {args[1]}", "%Y-%m-%d %H:%M"
+            )
+            if date.month < now.month:
+                date = date + relativedelta(years=1)
+            announe_date = date + relativedelta(days=-1)
+            movie_id, title = await _getMovie(ctx, " ".join(args[2:]))
+            if announe_date <= datetime.now():
+                await _announce(ctx.channel.id, movie_id, date)
+                scheduler.add_job(_watchedMovie, date, movie_id, user_id)
+                botLogger.log(
+                    f"{ctx.author} scheduled MOVIE_ID:{movie_id} as event for {date}"
+                )
+            else:
+                scheduler.add_job(
+                    _announce, announe_date, ctx.channel.id, movie_id, date
+                )
+                scheduler.add_job(_watchedMovie, date, movie_id, user_id)
+                botLogger.log(
+                    f"{ctx.author} scheduled MOVIE_ID:{movie_id} as event for {date}"
+                )
+                await ctx.send(
+                    f"{ctx.author.display_name} scheduled {title} for {date}."
+                )
+
+
+async def _announce(channel_id, movie_id, date):
+    ctx = bot.get_channel(channel_id)
+
+    botLogger.log(f"announcing movie: {movie_id}")
     movie_role = get(ctx.guild.roles, name="Movies")
 
-    announcement = movie_announcement(movie_id)
+    announcement = movie_announcement(movie_id, date)
 
     await ctx.send(movie_role.mention, embed=announcement)
+
+    # for member in ctx.guild.members:
+    #     if movie_role in member.roles:
+    #         if member != bot.user:
+    #             # channel = await member.create_dm()
+    #             await member.send(embed=announcement)
 
 
 async def _getMovie(ctx, movie):
@@ -182,7 +203,11 @@ async def _getUser(ctx):
         await ctx.send(f"Sorry, you must be subscribed to use this command. 😿")
 
 
-def movie_announcement(movie_id):
+def _watchedMovie(movie_id, user_id):
+    db.watchedMovie(movie_id, user_id)
+
+
+def movie_announcement(movie_id, date):
     movie = db.getMovieFull(movie_id)
 
     (
@@ -209,9 +234,11 @@ def movie_announcement(movie_id):
         colour=discord.Colour.green(),
     )
 
-    e.set_author(name=f"📽🍿🎬 Tonight We're Watching 🎬🍿📽")
+    e.set_author(name=f"📽🍿🎬 Movie Night 🎬🍿📽")
     e.set_image(url=poster)
     e.add_field(name="Genre", value=genre)
+    e.add_field(name="Date", value=date.strftime("%A %b, %d"), inline=True)
+    e.add_field(name="Time", value=f"{date.strftime('%I:%M %p')} CST", inline=True)
     e.set_footer(text=f"{plot}")
 
     return e
@@ -221,5 +248,6 @@ def movie_announcement(movie_id):
 try:
     bot.run(TOKEN)
 except Exception as e:
-    print(e)
+    botLogger.error(repr(e))
     bot.close()
+    scheduler.shutdown()

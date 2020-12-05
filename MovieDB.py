@@ -1,4 +1,6 @@
 import sqlite3
+from datetime import datetime
+import discord_logger
 
 from TablesVocab import *
 
@@ -7,17 +9,18 @@ class MovieDB:
     conn = None
     c = None
 
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.conn, self.c = self.create_connection()
         self.create_all_db()
 
     def create_connection(self):
         conn, c = None, None
         try:
-            conn = sqlite3.connect(MOVIES_DB)
+            conn = sqlite3.connect(MOVIES_DB, check_same_thread=False)
             c = conn.cursor()
         except Exception as e:
-            print(e)
+            self.logger.log(e)
 
         return conn, c
 
@@ -25,7 +28,7 @@ class MovieDB:
         info = list(zip(table_columns, table_types))
         info = [f"{x} {y}" for x, y in info]
         info += table_extras
-        print(f"Creating table {table_name}")
+        self.logger.log(f"Creating table {table_name}")
         try:
             self.c.execute(
                 f"""
@@ -35,22 +38,21 @@ class MovieDB:
                 """
             )
         except Exception as e:
-            print(e)
+            self.logger.log(e)
 
     def create_all_db(self):
-        print("Creating all tables...")
+        self.logger.log("Creating all tables...")
         self.create_db(MOVIES_TABLE, MOVIES_COLUMNS, MOVIES_TYPES)
         self.create_db(USERS_TABLE, USERS_COLUMNS, USERS_TYPES, USERS_EXTRAS)
         self.create_db(VOTES_TABLE, VOTES_COLUMNS, VOTES_TYPES, VOTES_EXTRAS)
         self.create_db(WATCHED_TABLE, WATCHED_COLUMNS, WATCHED_TYPES, WATCHED_EXTRAS)
         # self.create_db(RATINGS_TABLE, RATINGS_COLUMNS)
-        # self.create_db(SCHEDULE_TABLE, SCHEDULE_COLUMNS)
-        print("Tables finished building")
+        self.logger.log("Tables finished building")
 
     def insert(self, table_name, table_columns, *args):
         values = tuple([x for x in args])
         self.c.execute(
-            f"""INSERT OR IGNORE INTO {table_name} ({', '.join(table_columns[1:])}) VALUES ({('?,'*len(values))[:-1]}, datetime('now'))""",
+            f"""INSERT OR IGNORE INTO {table_name} ({', '.join(table_columns[1:])}) VALUES ({('?,'*len(values))[:-1]}, '{datetime.now()}')""",
             values,
         )
         self.conn.commit()
@@ -61,7 +63,7 @@ class MovieDB:
 
     def addUser(self, name, discriminator):
         self.insert(USERS_TABLE, USERS_COLUMNS, name, discriminator)
-        print(f"Added user {name}#{discriminator} to {USERS_TABLE}")
+        self.logger.log(f"Added user {name}#{discriminator} to {USERS_TABLE}")
         return self.c.lastrowid
 
     def getUser(self, name, discriminator):
@@ -104,7 +106,7 @@ class MovieDB:
             imdbRating,
             imdbId,
         )
-        print(f"Added {title} - {imdbId} to {MOVIES_TABLE}")
+        self.logger.log(f"Added {title} - {imdbId} to {MOVIES_TABLE}")
         return self.c.lastrowid
 
     def getMovie(self, movie_id):
@@ -159,11 +161,11 @@ class MovieDB:
 
     def voteMovie(self, movie_id, user_id):
         self.insert(VOTES_TABLE, VOTES_COLUMNS, movie_id, user_id)
-        print(f"USER_ID:{user_id} voted for MOVIE_ID:{movie_id}")
+        self.logger.log(f"USER_ID:{user_id} voted for MOVIE_ID:{movie_id}")
 
     def watchedMovie(self, movie_id, user_id):
         self.insert(WATCHED_TABLE, WATCHED_COLUMNS, movie_id, user_id)
-        print(f"USER_ID:{user_id} watched MOVIE_ID:{movie_id}")
+        self.logger.log(f"USER_ID:{user_id} watched MOVIE_ID:{movie_id}")
 
     def all_unwatched(self):
         self.c.execute(
@@ -203,41 +205,12 @@ class MovieDB:
         )
         return self.c.fetchall()
 
-    def user_watched(self, user_id):
-        self.c.execute(
-            f"""
-            SELECT
-                M.movie_id,
-                M.title,
-                W.timestamp
-            FROM
-                {MOVIES_TABLE} AS M
-                LEFT JOIN
-                (
-                    SELECT
-                        movie_id,
-                        timestamp
-                    FROM
-                        {WATCHED_TABLE}
-                    WHERE
-                        user_id = '{user_id}'
-                ) AS W on M.movie_id = W.movie_id
-            WHERE
-                W.user_id = '{user_id}'
-            ORDER BY
-                timestamp DESC
-            ;
-            """
-        )
-        return self.c.fetchall()
-
     def user_unwatched(self, user_id):
         self.c.execute(
             f"""
             SELECT
                 M.movie_id,
-                M.title,
-                M.timestamp
+                M.title
             FROM
                 {MOVIES_TABLE} AS M
                 LEFT JOIN 
@@ -253,7 +226,7 @@ class MovieDB:
             WHERE
                 V.user_id = '{user_id}'
             ORDER BY
-                timestamp DESC
+                M.timestamp DESC
             ;
             """
         )
