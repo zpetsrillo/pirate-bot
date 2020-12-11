@@ -80,3 +80,16 @@ WATCHED_EXTRAS = [
     f"FOREIGN KEY (movie_id) REFERENCES {MOVIES_TABLE} (movie_id)",
     f"FOREIGN KEY (user_id) REFERENCES {USERS_TABLE} (user_id)",
 ]
+
+SCHEDULE_TABLE = "schedule"
+SCHEDULE_COLUMNS = ["schedule_id", "movie_id", "date", "timestamp"]
+SCHEDULE_TYPES = [
+    "INTEGER PRIMARY KEY",
+    "INTEGER NOT NULL",
+    "TEXT NOT NULL",
+    "TEXT NOT NULL",
+]
+SCHEDULE_EXTRAS = [
+    f"FOREIGN KEY (movie_id) REFERENCES {MOVIES_TABLE} (movie_id)",
+    f"UNIQUE(movie_id, date)",
+]

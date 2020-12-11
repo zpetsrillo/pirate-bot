@@ -23,7 +23,6 @@ DISCORD_TOKEN=
 OMDB_KEY=
 MOVIE_DB=
 LOG_FILE_DISCORD=
-LOG_FILE_BOT=
 ```
 Install all required packages
 ```

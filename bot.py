@@ -94,9 +94,14 @@ async def top(ctx, arg: int = 5):
 
 
 @bot.command()
-async def watched(ctx, *, arg):
+async def watched(ctx, *args):
     user_id = await _getUser(ctx)
-    if user_id is not None:
+    if len(args) == 0:
+        watched_movies = db.all_watched()
+        table = tabulate(watched_movies, headers=["Id", "Title", "Date"])
+        await ctx.send(f"""```{table}```""")
+    elif user_id is not None:
+        arg = " ".join(args)
         movie_id, movie_title = await _getMovie(ctx, arg)
         db.watchedMovie(movie_id, user_id)
         await ctx.send(f"{movie_title} marked as watched.")
@@ -141,7 +146,11 @@ async def vote(ctx, *, arg):
 @bot.command()
 async def schedule(ctx, *args):
     user_id = await _getUser(ctx)
-    if len(args) < 3:
+    if len(args) == 0:
+        scheduled_movies = db.getScheduled()
+        table = tabulate(scheduled_movies, headers=["Id", "Title", "Date"])
+        await ctx.send(f"""```{table}```""")
+    elif len(args) < 3:
         await ctx.send(f"Missing arguments. Try Again.")
     else:
         if user_id is not None:
@@ -151,24 +160,24 @@ async def schedule(ctx, *args):
             )
             if date.month < now.month:
                 date = date + relativedelta(years=1)
-            announe_date = date + relativedelta(days=-1)
-            movie_id, title = await _getMovie(ctx, " ".join(args[2:]))
-            if announe_date <= datetime.now():
-                await _announce(ctx.channel.id, movie_id, date)
-                scheduler.add_job(_watchedMovie, date, movie_id, user_id)
-                botLogger.log(
-                    f"{ctx.author} scheduled MOVIE_ID:{movie_id} as event for {date}"
-                )
+            if date <= datetime.now():
+                await ctx.send(f"Please schedule event in the future.")
             else:
-                scheduler.add_job(
-                    _announce, announe_date, ctx.channel.id, movie_id, date
-                )
+                announe_date = date + relativedelta(days=-1)
+                movie_id, title = await _getMovie(ctx, " ".join(args[2:]))
+                if announe_date <= datetime.now():
+                    await _announce(ctx.channel.id, movie_id, date)
+                else:
+                    scheduler.add_job(
+                        _announce, announe_date, ctx.channel.id, movie_id, date
+                    )
+                    await ctx.send(
+                        f"{ctx.author.display_name} scheduled {title} for {date}."
+                    )
+                db.addSchedule(movie_id, date)
                 scheduler.add_job(_watchedMovie, date, movie_id, user_id)
                 botLogger.log(
                     f"{ctx.author} scheduled MOVIE_ID:{movie_id} as event for {date}"
-                )
-                await ctx.send(
-                    f"{ctx.author.display_name} scheduled {title} for {date}."
                 )
 
 
@@ -181,12 +190,6 @@ async def _announce(channel_id, movie_id, date):
     announcement = movie_announcement(movie_id, date)
 
     await ctx.send(movie_role.mention, embed=announcement)
-
-    # for member in ctx.guild.members:
-    #     if movie_role in member.roles:
-    #         if member != bot.user:
-    #             # channel = await member.create_dm()
-    #             await member.send(embed=announcement)
 
 
 async def _getMovie(ctx, movie):

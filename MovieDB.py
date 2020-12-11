@@ -46,7 +46,9 @@ class MovieDB:
         self.create_db(USERS_TABLE, USERS_COLUMNS, USERS_TYPES, USERS_EXTRAS)
         self.create_db(VOTES_TABLE, VOTES_COLUMNS, VOTES_TYPES, VOTES_EXTRAS)
         self.create_db(WATCHED_TABLE, WATCHED_COLUMNS, WATCHED_TYPES, WATCHED_EXTRAS)
-        # self.create_db(RATINGS_TABLE, RATINGS_COLUMNS)
+        self.create_db(
+            SCHEDULE_TABLE, SCHEDULE_COLUMNS, SCHEDULE_TYPES, SCHEDULE_EXTRAS
+        )
         self.logger.log("Tables finished building")
 
     def insert(self, table_name, table_columns, *args):
@@ -190,16 +192,14 @@ class MovieDB:
                 (
                     SELECT
                         movie_id,
-                        count(user_id) as seen
+                        watch_id
                     FROM
                         {WATCHED_TABLE}
-                    GROUP BY
-                        movie_id
-                ) AS W on M.movie_id = W.movie_id
+                ) AS W ON M.movie_id = W.movie_id
             WHERE
-                W.seen IS NULL
+                W.watch_id IS NULL
             ORDER BY
-                votes DESC
+                V.votes DESC
             ;
             """
         )
@@ -227,6 +227,79 @@ class MovieDB:
                 V.user_id = '{user_id}'
             ORDER BY
                 M.timestamp DESC
+            ;
+            """
+        )
+        return self.c.fetchall()
+
+    def addSchedule(self, movie_id, date):
+        self.insert(SCHEDULE_TABLE, SCHEDULE_COLUMNS, movie_id, date)
+        self.logger.log(f"{movie_id} at {date} added to {SCHEDULE_TABLE}")
+        return self.c.lastrowid
+
+    def getScheduled(self):
+        self.c.execute(
+            f"""
+            SELECT
+                M.movie_id,
+                M.title,
+                S.date
+            FROM
+                {SCHEDULE_TABLE} AS S
+                LEFT JOIN
+                (
+                    SELECT
+                        movie_id,
+                        watch_id
+                    FROM
+                        {WATCHED_TABLE}
+                ) AS W ON W.movie_id = S.movie_id
+                LEFT JOIN
+                (
+                    SELECT
+                        movie_id,
+                        title
+                    FROM
+                        {MOVIES_TABLE}
+                ) AS M ON M.movie_id = S.movie_id
+            WHERE
+                W.watch_id IS NULL
+            ORDER BY
+                S.date DESC
+            ;
+            """
+        )
+        return self.c.fetchall()
+
+    def all_watched(self):
+        self.c.execute(
+            f"""
+            SELECT
+                M.movie_id,
+                M.title,
+                S.date
+            FROM
+                {MOVIES_TABLE} AS M
+                LEFT JOIN
+                (
+                    SELECT
+                        movie_id,
+                        watch_id
+                    FROM
+                        {WATCHED_TABLE}
+                ) AS W ON M.movie_id = W.movie_id
+                LEFT JOIN
+                (
+                    SELECT
+                        movie_id,
+                        date
+                    FROM
+                        {SCHEDULE_TABLE}
+                ) AS S ON M.movie_id = S.movie_id
+            WHERE
+                W.watch_id IS NOT NULL
+            ORDER BY
+                S.date DESC
             ;
             """
         )
