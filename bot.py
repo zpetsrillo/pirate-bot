@@ -64,8 +64,7 @@ async def subscribe(ctx):
     except:
         try:
             db.addUser(
-                ctx.author.name,
-                ctx.author.discriminator,
+                ctx.author.name, ctx.author.discriminator,
             )
             await ctx.send(
                 f"{ctx.author.display_name} has been added to the movie watchers group!"
@@ -80,7 +79,12 @@ async def all(ctx):
     botLogger.log(f"{ctx.author} listing all")
     movies = db.all_unwatched()
     table = tabulate(movies, headers=["Id", "Title", "Votes"])
-    await ctx.send(f"""```{table}```""")
+    if len(table) >= 2000:
+        with open("all_movies.txt", "w") as f:
+            f.write(table)
+        ctx.send(file=discord.File(r"./all_movies.txt"))
+    else:
+        await ctx.send(f"""```{table}```""")
 
 
 @bot.command()
