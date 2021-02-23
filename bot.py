@@ -82,7 +82,7 @@ async def all(ctx):
     if len(table) >= 2000:
         with open("all_movies.txt", "w") as f:
             f.write(table)
-        ctx.send(file=discord.File(r"./all_movies.txt"))
+        await ctx.send(file=discord.File(r"./all_movies.txt"))
     else:
         await ctx.send(f"""```{table}```""")
 
